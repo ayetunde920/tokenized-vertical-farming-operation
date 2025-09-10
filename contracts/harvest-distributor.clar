@@ -95,7 +95,7 @@
         
         ;; Update contract state
         (var-set total-deposited (+ (var-get total-deposited) amount))
-        (var-set current-cycle (max cycle (var-get current-cycle)))
+        (var-set current-cycle (if (> cycle (var-get current-cycle)) cycle (var-get current-cycle)))
         
         (print {event: "harvest-deposited", cycle: cycle, amount: amount, rewards-per-share: rewards-per-share})
         (ok cycle)
@@ -291,10 +291,15 @@
         (balance-info (map-get? shareholder-balances shareholder))
         (last-claimed (match balance-info some-info (get last-claim-cycle some-info) u0))
         (current (var-get current-cycle))
+        (diff (- current last-claimed))
     )
         (if (<= current last-claimed)
             (list)
-            (generate-cycle-list (+ last-claimed u1) current)
+            (if (<= diff u1) (list (+ last-claimed u1))
+            (if (<= diff u2) (list (+ last-claimed u1) (+ last-claimed u2))
+            (if (<= diff u3) (list (+ last-claimed u1) (+ last-claimed u2) (+ last-claimed u3))
+            (if (<= diff u4) (list (+ last-claimed u1) (+ last-claimed u2) (+ last-claimed u3) (+ last-claimed u4))
+            (list (+ last-claimed u1) (+ last-claimed u2) (+ last-claimed u3) (+ last-claimed u4) (+ last-claimed u5))))))
         )
     )
 )
@@ -336,12 +341,3 @@
     )
 )
 
-(define-private (generate-cycle-list (start uint) (end uint))
-    (if (> start end)
-        (list)
-        (unwrap-panic (as-max-len? 
-            (append (generate-cycle-list (+ start u1) end) start)
-            u10
-        ))
-    )
-)
